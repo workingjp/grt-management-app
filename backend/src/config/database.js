@@ -4,8 +4,7 @@ const connectDB = async () => {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    console.warn('MONGODB_URI is not set. Database connection skipped.');
-    return;
+    throw new Error('MONGODB_URI is not set');
   }
 
   await mongoose.connect(mongoUri);
