@@ -2,13 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../environments/environment';
 import { Template, TemplateAccount, TemplateDetail } from '../models/template.model';
 
 @Injectable({ providedIn: 'root' })
 export class TemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/templates';
-  private readonly templateAccountApiUrl = '/api/template-accounts';
+  private readonly apiUrl = `${environment.apiBasePath}/templates`;
+  private readonly templateAccountApiUrl = `${environment.apiBasePath}/template-accounts`;
 
   getTemplates(): Observable<Template[]> {
     return this.http.get<Template[]>(this.apiUrl);
