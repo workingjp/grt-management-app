@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
   }
 
   onCreateTemplate(): void {
-    void this.router.navigate(['/templates', 'create']);
+    void this.router.navigate(['/templates', 'new']);
   }
 
   onEditTemplate(template: Template): void {

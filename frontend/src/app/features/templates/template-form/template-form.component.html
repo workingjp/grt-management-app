@@ -1,0 +1,137 @@
+<div class="form-page">
+  <header class="form-page__header">
+    <div class="form-page__header-inner">
+      <div class="form-page__header-left">
+        <button type="button" class="btn btn--back" (click)="onCancel()">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Back
+        </button>
+        <h1 class="form-page__title">{{ pageTitle() }}</h1>
+      </div>
+      <div class="form-page__header-actions">
+        <button type="button" class="btn btn--ghost" (click)="onCancel()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn--primary btn--save"
+          [disabled]="saving()"
+          (click)="onSave()"
+        >
+          {{ saving() ? 'Saving...' : 'Save Template' }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="form-page__body">
+    @if (loading()) {
+      <div class="section-card section-card--state">Loading template...</div>
+    } @else if (loadError()) {
+      <div class="section-card section-card--state section-card--error">{{ loadError() }}</div>
+    } @else {
+      <form class="form-stack" [formGroup]="templateForm" (ngSubmit)="onSave()">
+        <section class="section-card">
+          <div class="section-card__header">
+            <h2 class="section-card__title">Template Details</h2>
+            <p class="section-card__subtitle">Basic information for this reporting template</p>
+          </div>
+
+          <div class="section-card__body">
+            <div class="form-field">
+              <label class="form-field__label" for="templateName">Template Name</label>
+              <input
+                id="templateName"
+                type="text"
+                class="form-field__input"
+                formControlName="name"
+                placeholder="Enter template name"
+              />
+              @if (templateForm.controls.name.touched && templateForm.controls.name.hasError('required')) {
+                <p class="form-field__error">Template name is required.</p>
+              }
+            </div>
+
+            <div class="form-field form-field--last">
+              <label class="form-field__label" for="templateGroup">Group</label>
+              <input
+                id="templateGroup"
+                type="text"
+                class="form-field__input form-field__input--readonly"
+                formControlName="group"
+                readonly
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-card__header">
+            <h2 class="section-card__title">GRT Accounts</h2>
+            <p class="section-card__subtitle">Chart of accounts included in this template</p>
+          </div>
+
+          <div class="section-card__body">
+            @if (accounts().length === 0) {
+              <div class="accounts-empty">
+                <p>No accounts added yet</p>
+                <span>Add your first account below</span>
+              </div>
+            } @else {
+              <div class="account-chips">
+                @for (account of accounts(); track $index) {
+                  <div class="account-chip">
+                    <span class="account-chip__label">{{ account.name }}</span>
+                    <button
+                      type="button"
+                      class="account-chip__remove"
+                      title="Remove account"
+                      (click)="removeAccount($index)"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path
+                          d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="add-account" [formGroup]="accountForm">
+              <div class="add-account__field">
+                <label class="form-field__label" for="accountName">Add Account</label>
+                <input
+                  id="accountName"
+                  type="text"
+                  class="form-field__input"
+                  formControlName="accountName"
+                  placeholder="e.g. Revenue, Salaries"
+                  (keydown.enter)="$event.preventDefault(); addAccount()"
+                />
+                @if (
+                  accountForm.controls.accountName.touched &&
+                  accountForm.controls.accountName.hasError('required')
+                ) {
+                  <p class="form-field__error">Account name cannot be empty.</p>
+                }
+              </div>
+              <button type="button" class="btn btn--secondary" (click)="addAccount()">
+                Add Account
+              </button>
+            </div>
+          </div>
+        </section>
+
+        @if (saveError()) {
+          <p class="form-error">{{ saveError() }}</p>
+        }
+      </form>
+    }
+  </div>
+</div>
