@@ -1,0 +1,159 @@
+<div class="mapping-page">
+  <header class="mapping-page__header">
+    <div class="mapping-page__header-inner">
+      <div>
+        <button type="button" class="btn btn--back" (click)="onBack()">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Back
+        </button>
+        <h1 class="mapping-page__title">Account Mapping</h1>
+        @if (templateName()) {
+          <p class="mapping-page__subtitle">{{ templateName() }}</p>
+        }
+      </div>
+    </div>
+  </header>
+
+  <div class="mapping-page__body">
+    @if (loading()) {
+      <div class="mapping-state">Loading mapping data...</div>
+    } @else if (loadError()) {
+      <div class="mapping-state mapping-state--error">{{ loadError() }}</div>
+    } @else {
+      <div class="mapping-panels">
+        <section class="panel panel--left">
+          <div class="panel__header">
+            <div class="panel__header-text">
+              <span class="panel__eyebrow">GRT Accounts</span>
+              <h2 class="panel__title">Template Accounts</h2>
+              <p class="panel__subtitle">Drop company accounts onto a template row to create a mapping</p>
+            </div>
+            <span class="panel__count">{{ templateAccounts().length }}</span>
+          </div>
+
+          <div class="panel__body">
+            @if (templateAccounts().length === 0) {
+              <div class="empty-state">
+                <p class="empty-state__title">No template accounts</p>
+                <p class="empty-state__text">Add accounts in the template editor before mapping.</p>
+              </div>
+            } @else {
+              @for (account of templateAccounts(); track account.id) {
+                <div class="template-account">
+                  <div class="template-account__header">
+                    <h3 class="template-account__name">{{ account.name }}</h3>
+                    <span class="template-account__label">Mapped Accounts</span>
+                  </div>
+
+                  <div
+                    class="drop-zone"
+                    cdkDropList
+                    [id]="dropZoneId(account.id)"
+                    [cdkDropListConnectedTo]="['company-accounts-list']"
+                    (cdkDropListDropped)="onDrop($event, account)"
+                  >
+                    @if (getMappingsForAccount(account.id).length === 0) {
+                      <div class="drop-zone__empty">
+                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path
+                            d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
+                          />
+                        </svg>
+                        <span>Drop a company account here</span>
+                      </div>
+                    } @else {
+                      <div class="mapped-chips">
+                        @for (mapping of getMappingsForAccount(account.id); track mapping.id) {
+                          <span class="mapping-badge">
+                            <span class="mapping-badge__dot"></span>
+                            {{ mapping.companyAccountName }}
+                            <button
+                              type="button"
+                              class="mapping-badge__remove"
+                              title="Remove mapping"
+                              (click)="removeMapping(mapping)"
+                            >
+                              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path
+                                  d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+                                />
+                              </svg>
+                            </button>
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </section>
+
+        <section class="panel panel--right">
+          <div class="panel__header">
+            <div class="panel__header-text">
+              <span class="panel__eyebrow">Company COA</span>
+              <h2 class="panel__title">Chart of Accounts</h2>
+              <p class="panel__subtitle">Drag an account from this list onto a template account</p>
+            </div>
+            <span class="panel__count">{{ companyAccounts().length }}</span>
+          </div>
+
+          <div
+            class="panel__body panel__body--source"
+            cdkDropList
+            id="company-accounts-list"
+            [cdkDropListData]="companyAccounts()"
+            cdkDropListSortingDisabled
+            [cdkDropListConnectedTo]="templateDropZoneIds()"
+          >
+            @if (companyAccounts().length === 0) {
+              <div class="empty-state">
+                <p class="empty-state__title">No company accounts</p>
+                <p class="empty-state__text">Run the seed script to load chart of accounts.</p>
+              </div>
+            } @else {
+              @for (account of companyAccounts(); track account.id) {
+                <div class="drag-card" cdkDrag [cdkDragData]="account">
+                  <div class="drag-card__inner">
+                    <span class="drag-card__grip" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          d="M7 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM7 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 10a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM13 16a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                        />
+                      </svg>
+                    </span>
+                    <div class="drag-card__content">
+                      <span class="drag-card__name">{{ account.name }}</span>
+                      @if (account.category) {
+                        <span
+                          class="drag-card__category"
+                          [class.drag-card__category--income]="account.category === 'Income'"
+                          [class.drag-card__category--expense]="account.category === 'Expense'"
+                        >
+                          {{ account.category }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                  <div class="drag-card__placeholder" *cdkDragPlaceholder></div>
+                </div>
+              }
+            }
+          </div>
+        </section>
+      </div>
+
+      @if (actionError()) {
+        <p class="mapping-action-error">{{ actionError() }}</p>
+      }
+    }
+  </div>
+</div>
