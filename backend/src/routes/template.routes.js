@@ -1,4 +1,5 @@
 const express = require('express');
+const { getMappingsByTemplate } = require('../controllers/mapping.controller');
 const {
   getTemplates,
   createTemplate,
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.get('/', getTemplates);
 router.post('/', createTemplate);
+router.get('/:id/mappings', getMappingsByTemplate);
 router.get('/:id', getTemplateById);
 router.put('/:id', updateTemplate);
 router.delete('/:id', deleteTemplate);

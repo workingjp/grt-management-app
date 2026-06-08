@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -8,10 +8,10 @@ import { CreateMappingRequest, Mapping } from '../models/mapping.model';
 export class MappingService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/mappings';
+  private readonly templatesApiUrl = '/api/templates';
 
   getMappings(templateId: string): Observable<Mapping[]> {
-    const params = new HttpParams().set('templateId', templateId);
-    return this.http.get<Mapping[]>(this.apiUrl, { params });
+    return this.http.get<Mapping[]>(`${this.templatesApiUrl}/${templateId}/mappings`);
   }
 
   createMapping(request: CreateMappingRequest): Observable<Mapping> {

@@ -5,12 +5,14 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { LocalAccount } from '../../../models/template.model';
 import { TemplateService } from '../../../services/template.service';
+import { SpinnerComponent } from '../../../shared/components/spinner/spinner.component';
 import { ToastService } from '../../../shared/services/toast.service';
+import { extractErrorMessage } from '../../../shared/utils/api-error.util';
 
 @Component({
   selector: 'app-template-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SpinnerComponent],
   templateUrl: './template-form.component.html',
   styleUrl: './template-form.component.css',
 })
@@ -31,6 +33,7 @@ export class TemplateFormComponent implements OnInit {
   readonly deletedAccountIds = signal<string[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
+  readonly submitted = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly saveError = signal<string | null>(null);
 
@@ -49,6 +52,11 @@ export class TemplateFormComponent implements OnInit {
       this.templateId.set(id);
       this.loadTemplate(id);
     }
+  }
+
+  isNameInvalid(): boolean {
+    const control = this.templateForm.controls.name;
+    return control.invalid && (control.touched || this.submitted());
   }
 
   addAccount(): void {
@@ -82,6 +90,8 @@ export class TemplateFormComponent implements OnInit {
   }
 
   onSave(): void {
+    this.submitted.set(true);
+
     if (this.templateForm.invalid) {
       this.templateForm.markAllAsTouched();
       return;
@@ -118,8 +128,8 @@ export class TemplateFormComponent implements OnInit {
         );
         this.loading.set(false);
       },
-      error: () => {
-        this.loadError.set('Failed to load template. Please try again.');
+      error: (err: unknown) => {
+        this.loadError.set(extractErrorMessage(err, 'Failed to load template. Please try again.'));
         this.loading.set(false);
       },
     });
@@ -145,7 +155,8 @@ export class TemplateFormComponent implements OnInit {
       )
       .subscribe({
         next: () => this.onSaveSuccess('Template created successfully.'),
-        error: () => this.onSaveFailure('Failed to create template. Please try again.'),
+        error: (err: unknown) =>
+          this.onSaveFailure(extractErrorMessage(err, 'Failed to create template. Please try again.')),
       });
   }
 
@@ -174,7 +185,8 @@ export class TemplateFormComponent implements OnInit {
       )
       .subscribe({
         next: () => this.onSaveSuccess('Template updated successfully.'),
-        error: () => this.onSaveFailure('Failed to update template. Please try again.'),
+        error: (err: unknown) =>
+          this.onSaveFailure(extractErrorMessage(err, 'Failed to update template. Please try again.')),
       });
   }
 

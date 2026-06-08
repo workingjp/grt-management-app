@@ -22,10 +22,21 @@
 
   <div class="mapping-page__body">
     @if (loading()) {
-      <div class="mapping-state">Loading mapping data...</div>
+      <div class="mapping-state state-panel">
+        <app-spinner />
+        <p class="state-panel__text">Loading mapping data...</p>
+      </div>
     } @else if (loadError()) {
-      <div class="mapping-state mapping-state--error">{{ loadError() }}</div>
+      <div class="mapping-state state-panel">
+        <p class="state-panel__text state-panel__text--error">{{ loadError() }}</p>
+      </div>
     } @else {
+      @if (hasNoMappings()) {
+        <div class="mapping-banner">
+          <p>No mappings yet. Drag company accounts from the right panel onto template accounts.</p>
+        </div>
+      }
+
       <div class="mapping-panels">
         <section class="panel panel--left">
           <div class="panel__header">
@@ -121,7 +132,7 @@
               </div>
             } @else {
               @for (account of companyAccounts(); track account.id) {
-                <div class="drag-card" cdkDrag [cdkDragData]="account">
+                <div class="drag-card" cdkDrag cdkDragPreviewClass="drag-preview" [cdkDragData]="account">
                   <div class="drag-card__inner">
                     <span class="drag-card__grip" aria-hidden="true">
                       <svg viewBox="0 0 20 20" fill="currentColor">
@@ -152,7 +163,7 @@
       </div>
 
       @if (actionError()) {
-        <p class="mapping-action-error">{{ actionError() }}</p>
+        <p class="alert alert--error mapping-action-error">{{ actionError() }}</p>
       }
     }
   </div>

@@ -5,6 +5,11 @@ const getMappings = async (req, res) => {
   res.status(200).json(mappings);
 };
 
+const getMappingsByTemplate = async (req, res) => {
+  const mappings = await mappingService.getMappingsByTemplateId(req.params.id);
+  res.status(200).json(mappings);
+};
+
 const createMapping = async (req, res) => {
   const mapping = await mappingService.createMapping(
     req.body.templateAccountId,
@@ -20,6 +25,7 @@ const deleteMapping = async (req, res) => {
 
 module.exports = {
   getMappings,
+  getMappingsByTemplate,
   createMapping,
   deleteMapping,
 };

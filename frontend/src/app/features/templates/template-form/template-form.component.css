@@ -132,6 +132,16 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
+.form-field__input--invalid {
+  border-color: #fca5a5;
+  background: #fffbfb;
+}
+
+.form-field__input--invalid:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
 .form-field__input--readonly {
   background: #f8fafc;
   color: #64748b;

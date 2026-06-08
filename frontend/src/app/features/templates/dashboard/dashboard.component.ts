@@ -9,11 +9,14 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SpinnerComponent } from '../../../shared/components/spinner/spinner.component';
+import { ToastService } from '../../../shared/services/toast.service';
+import { extractErrorMessage } from '../../../shared/utils/api-error.util';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [],
+  imports: [SpinnerComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -21,12 +24,18 @@ export class DashboardComponent implements OnInit {
   private readonly templateService = inject(TemplateService);
   private readonly dialog = inject(Dialog);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   readonly templates = signal<Template[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly deletingId = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.loadTemplates();
+  }
+
+  retryLoad(): void {
     this.loadTemplates();
   }
 
@@ -36,6 +45,10 @@ export class DashboardComponent implements OnInit {
 
   onEditTemplate(template: Template): void {
     void this.router.navigate(['/templates', template.id, 'edit']);
+  }
+
+  onMapAccounts(template: Template): void {
+    void this.router.navigate(['/templates', template.id, 'mapping']);
   }
 
   onDeleteTemplate(template: Template): void {
@@ -51,11 +64,21 @@ export class DashboardComponent implements OnInit {
     dialogRef.closed
       .pipe(
         filter((confirmed) => confirmed === true),
-        switchMap(() => this.templateService.deleteTemplate(template.id))
+        switchMap(() => {
+          this.deletingId.set(template.id);
+          return this.templateService.deleteTemplate(template.id);
+        })
       )
       .subscribe({
-        next: () => this.loadTemplates(),
-        error: () => this.error.set('Failed to delete template. Please try again.'),
+        next: () => {
+          this.deletingId.set(null);
+          this.toast.show('Template deleted successfully.');
+          this.loadTemplates();
+        },
+        error: (err: unknown) => {
+          this.deletingId.set(null);
+          this.error.set(extractErrorMessage(err, 'Failed to delete template. Please try again.'));
+        },
       });
   }
 
@@ -68,8 +91,8 @@ export class DashboardComponent implements OnInit {
         this.templates.set(templates);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Failed to load templates. Please try again.');
+      error: (err: unknown) => {
+        this.error.set(extractErrorMessage(err, 'Failed to load templates. Please try again.'));
         this.loading.set(false);
       },
     });

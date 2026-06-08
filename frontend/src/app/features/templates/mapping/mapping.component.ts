@@ -1,7 +1,8 @@
+import { Dialog } from '@angular/cdk/dialog';
 import { CdkDrag, CdkDragDrop, CdkDragPlaceholder, CdkDropList } from '@angular/cdk/drag-drop';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { filter, forkJoin, switchMap } from 'rxjs';
 
 import { CompanyAccount } from '../../../models/company-account.model';
 import { Mapping } from '../../../models/mapping.model';
@@ -9,18 +10,25 @@ import { TemplateAccount } from '../../../models/template.model';
 import { CompanyAccountService } from '../../../services/company-account.service';
 import { MappingService } from '../../../services/mapping.service';
 import { TemplateService } from '../../../services/template.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SpinnerComponent } from '../../../shared/components/spinner/spinner.component';
 import { ToastService } from '../../../shared/services/toast.service';
+import { extractErrorMessage } from '../../../shared/utils/api-error.util';
 
 @Component({
   selector: 'app-mapping',
   standalone: true,
-  imports: [CdkDropList, CdkDrag, CdkDragPlaceholder],
+  imports: [CdkDropList, CdkDrag, CdkDragPlaceholder, SpinnerComponent],
   templateUrl: './mapping.component.html',
   styleUrl: './mapping.component.css',
 })
 export class MappingComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly dialog = inject(Dialog);
   private readonly templateService = inject(TemplateService);
   private readonly companyAccountService = inject(CompanyAccountService);
   private readonly mappingService = inject(MappingService);
@@ -39,6 +47,10 @@ export class MappingComponent implements OnInit {
     this.templateAccounts().map((account) => this.dropZoneId(account.id))
   );
 
+  readonly hasNoMappings = computed(
+    () => this.templateAccounts().length > 0 && this.mappings().length === 0
+  );
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -48,7 +60,7 @@ export class MappingComponent implements OnInit {
     }
 
     this.templateId.set(id);
-    this.loadData(id);
+    this.loadData(id, true);
   }
 
   dropZoneId(templateAccountId: string): string {
@@ -77,35 +89,54 @@ export class MappingComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toast.show('Mapping created successfully.');
-          this.refreshMappings();
+          this.loadData(this.templateId(), false);
         },
-        error: () => {
-          this.actionError.set('Failed to create mapping. It may already exist.');
+        error: (err: unknown) => {
+          this.actionError.set(
+            extractErrorMessage(err, 'Failed to create mapping. It may already exist.')
+          );
         },
       });
   }
 
   removeMapping(mapping: Mapping): void {
-    this.actionError.set(null);
-
-    this.mappingService.deleteMapping(mapping.id).subscribe({
-      next: () => {
-        this.toast.show('Mapping removed successfully.');
-        this.refreshMappings();
-      },
-      error: () => {
-        this.actionError.set('Failed to remove mapping. Please try again.');
+    const dialogRef = this.dialog.open<boolean, ConfirmDialogData>(ConfirmDialogComponent, {
+      data: {
+        title: 'Remove Mapping',
+        message: `Remove mapping to "${mapping.companyAccountName}"?`,
+        confirmLabel: 'Remove',
+        cancelLabel: 'Cancel',
       },
     });
+
+    dialogRef.closed
+      .pipe(
+        filter((confirmed) => confirmed === true),
+        switchMap(() => this.mappingService.deleteMapping(mapping.id))
+      )
+      .subscribe({
+        next: () => {
+          this.actionError.set(null);
+          this.toast.show('Mapping removed successfully.');
+          this.loadData(this.templateId(), false);
+        },
+        error: (err: unknown) => {
+          this.actionError.set(
+            extractErrorMessage(err, 'Failed to remove mapping. Please try again.')
+          );
+        },
+      });
   }
 
   onBack(): void {
     void this.router.navigate(['/templates']);
   }
 
-  private loadData(templateId: string): void {
-    this.loading.set(true);
-    this.loadError.set(null);
+  private loadData(templateId: string, showLoading: boolean): void {
+    if (showLoading) {
+      this.loading.set(true);
+      this.loadError.set(null);
+    }
 
     forkJoin({
       template: this.templateService.getTemplateById(templateId),
@@ -119,17 +150,16 @@ export class MappingComponent implements OnInit {
         this.mappings.set(mappings);
         this.loading.set(false);
       },
-      error: () => {
-        this.loadError.set('Failed to load mapping data. Please try again.');
+      error: (err: unknown) => {
+        if (showLoading) {
+          this.loadError.set(
+            extractErrorMessage(err, 'Failed to load mapping data. Please try again.')
+          );
+        } else {
+          this.actionError.set(extractErrorMessage(err, 'Failed to refresh mapping data.'));
+        }
         this.loading.set(false);
       },
-    });
-  }
-
-  private refreshMappings(): void {
-    this.mappingService.getMappings(this.templateId()).subscribe({
-      next: (mappings) => this.mappings.set(mappings),
-      error: () => this.actionError.set('Failed to refresh mappings.'),
     });
   }
 }
